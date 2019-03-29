@@ -56,7 +56,7 @@ void setup() {
   ADCSRB = 0x00; // free running mode
   DIDR0 = ((1 << ADC0D)|(1 << ADC1D)); //disable digital IO for ADC0 and ADC1
 
-  //Setup Button ISR
+  //Setup Button
   DDRD &= ~(0x04); //set PD2 to input
   PORTD |= (0x04); // turn on the Pull-up 
   
@@ -75,7 +75,7 @@ ISR(TIMER1_CAPT_vect){
   rate = (RATE>>7); //scale
   //set waveshape
   waveform = (uint8_t)(SHAPE>>13);  //scale to 3-bit value,
-  //swtich back to reading rate knob if changed
+  //switch back to reading rate knob if changed
   if(rate != p_rate){
     tap_phase = 0;
   }
@@ -197,7 +197,7 @@ ISR(TIMER1_CAPT_vect){
 
   //TEMPO DETERMINTATION BLOCK
   switch(tap_state){
-    //do nothing
+    //do nothing?
     case 0:
     break;  
     
