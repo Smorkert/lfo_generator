@@ -6,9 +6,9 @@
 #define PWM_QTY 2 // 2 PWMs in parallel
  
 //LFO V=varibales
-uint16_t lfo, unPhase, untPhase;
+uint16_t lfo, unPhase, untPhase, RATE = 0, SHAPE = 0; //changed RATE, SHAPE from volatile uint16_t if issues
 uint16_t y = 0;
-volatile uint16_t p_rate, RATE = 0, SHAPE = 0, rate, r_timer;
+volatile uint16_t p_rate, rate, r_timer;
 uint32_t phase, phase_inc, tap_phase_inc;
 volatile uint8_t waveform, ovf; 
 
@@ -34,11 +34,12 @@ PROGMEM  const uint16_t tri_table[]  = {
 PROGMEM  const uint16_t saw_table[]  = {
   #include "saw_table.h"
 };
+/*
 //saw wave table up
 PROGMEM  const uint16_t saw_table2[]  = {
   #include "saw_table2.h"
 };
-
+*/
 
 
 void setup() {
@@ -97,7 +98,7 @@ ISR(TIMER1_CAPT_vect){
     break;
     case 1:
       //phase increment from tap tempo
-      untPhase += 32;
+      untPhase += 4096;
       if(untPhase > tap_phase_inc){
         //increment unPhase
         unPhase++;
@@ -117,29 +118,55 @@ ISR(TIMER1_CAPT_vect){
     case 0:
       lfo = pgm_read_word_near(sine_table + unPhase);
     break;
-    //sine/triganle
+    //triganle
     case 1:
-      lfo = ((pgm_read_word_near(tri_table + unPhase)>>1) + (pgm_read_word_near(sine_table + unPhase)>>1));
-    break;
-    //triangle
-    case 2:
       lfo = pgm_read_word_near(tri_table + unPhase);
     break;
-    //triangle/saw
-    case 3:
-      lfo = ((pgm_read_word_near(tri_table + unPhase)>>1) + (pgm_read_word_near(saw_table + unPhase)>>1));
-    break;
     //saw down
-    case 4:
+    case 2:
       lfo = pgm_read_word_near(saw_table + unPhase);
     break;
     //saw up
-    case 5:
-      lfo = pgm_read_word_near(saw_table2 + unPhase);
+    case 3:
+      unPhase = 511-unPhase;
+      lfo = pgm_read_word_near(saw_table + unPhase);
     break;
     //square
-    case 6:
+    case 4:
       lfo = (uint16_t)((unPhase>>8)-1);
+    break;
+    //pulse (quarter)
+    case 5:
+      lfo = (uint16_t)((unPhase>>7)-1);
+    break;
+    //step
+    case 6:
+      switch(unPhase>>6){
+        case 0:
+          lfo = 0;
+        break;
+        case 1:
+          lfo = 16384;
+        break;
+        case 2:
+          lfo = 32768;
+        break;
+        case 3:
+          lfo = 49152;
+        break;
+        case 4:
+          lfo = 65535;
+        break;
+        case 5:
+          lfo = 49152;
+        break;
+        case 6:
+          lfo = 32768;
+        break;
+        case 7:
+          lfo = 16384;
+        break;
+      }
     break;
     //random
     case 7:
@@ -197,7 +224,7 @@ ISR(TIMER1_CAPT_vect){
 
   //TEMPO DETERMINTATION BLOCK
   switch(tap_state){
-    //do nothing?
+    //do nothing
     case 0:
     break;  
     
@@ -224,7 +251,7 @@ ISR(TIMER1_CAPT_vect){
       timer_buffer[n] = timer; //store value
       tap_rate_sum += timer_buffer[n]; //sum for average 
       n++; //increment average count
-      tap_phase_inc = ((tap_rate_sum/n)<<5)>>9; //calculate period and increase resolution 
+      tap_phase_inc = ((tap_rate_sum/n)<<12)>>9; //calculate period and increase resolution (12-lshift: 4096)
       if(n > 1) {
         tap_phase = 1; //use tap tempo value for rate / phase increments
       }
