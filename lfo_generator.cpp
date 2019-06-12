@@ -26,6 +26,10 @@ PROGMEM  const uint32_t lfo_table[]  = {
 PROGMEM  const uint16_t sine_table[]  = {
   #include "sinewave_table.h"
 };
+//sine wave octave table
+PROGMEM  const uint16_t sine_oct_table[]  = {
+  #include "sinewave_oct_table.h"
+};
 //triangle wave table
 PROGMEM  const uint16_t tri_table[]  = {
   #include "triangle_table.h"
@@ -72,7 +76,7 @@ void loop(){
 ISR(TIMER1_CAPT_vect){
 
   //Read ADC pins
-  readADC(&RATE, &SHAPE);
+  readADC(&SHAPE, &RATE);
   rate = (RATE>>7); //scale
   //set waveshape
   waveform = (uint8_t)(SHAPE>>13);  //scale to 3-bit value,
@@ -118,7 +122,7 @@ ISR(TIMER1_CAPT_vect){
     case 0:
       lfo = pgm_read_word_near(sine_table + unPhase);
     break;
-    //triganle
+    //triangle
     case 1:
       lfo = pgm_read_word_near(tri_table + unPhase);
     break;
@@ -135,9 +139,9 @@ ISR(TIMER1_CAPT_vect){
     case 4:
       lfo = (uint16_t)((unPhase>>8)-1);
     break;
-    //pulse (quarter)
+    //sine w/ octave 
     case 5:
-      lfo = (uint16_t)((unPhase>>7)-1);
+      lfo = pgm_read_word_near(sine_oct_table + unPhase);
     break;
     //step
     case 6:
@@ -182,8 +186,8 @@ ISR(TIMER1_CAPT_vect){
   }
   
   //write the PWM output signal
-  OCR1AL = (uint8_t)(lfo >> 8); // send out high byte
-  OCR1BL = (uint8_t)(lfo & 0xFF); //send out low byte
+  OCR1BL = (uint8_t)(lfo >> 8); // send out high byte
+  OCR1AL = (uint8_t)(lfo & 0xFF); //send out low byte
   
 
   //BUTTON STATUS BLOCK
