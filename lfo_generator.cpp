@@ -66,9 +66,6 @@ void setup() {
   //Setup Button
   DDRD &= ~(0x04); //set PD2 to input
   PORTD |= (0x04); // turn on the Pull-up 
-
-  SAMPLES_PER_CYCLE_FIXEDPOINT  = (uint32_t)SAMPLES_PER_CYCLE<<21;
-  TICKS_PER_CYCLE = (float)((float)SAMPLES_PER_CYCLE_FIXEDPOINT/(float)SAMPLERATE);
   
   sei(); // turn on interrupts - not really necessary with arduino
 }
@@ -117,7 +114,8 @@ ISR(TIMER1_CAPT_vect){
     break;
     //tap tempo
     case 1:
-      /*
+      
+      /* ENABLE THIS FOR FIXED POINT VERSION
       //phase increment from tap tempo
       untPhase += 1024;
       if(untPhase > tap_phase_inc){
@@ -130,6 +128,7 @@ ISR(TIMER1_CAPT_vect){
         //clear untPhase
         untPhase -= tap_phase_inc;
         */
+      // FLOATING POINT VERSION
       //accumulate phase 
       phase += tap_phase_inc;
       //overflow flag
@@ -218,7 +217,7 @@ ISR(TIMER1_CAPT_vect){
   //BUTTON STATUS BLOCK
   //increment button timer
   b_timer++;
-  //count to 16 (3906.25KHz)
+  //count to 64 (488.28Hz)
   if(b_timer >= 64){
     //read tap tempo button
     c_tap = (PIND & 0x04)>>2;
@@ -277,14 +276,14 @@ ISR(TIMER1_CAPT_vect){
   
     //store
     case 2:
-      //timer_buffer[n] = timer; //store value
-      //tap_rate_sum += timer_buffer[n]; //sum for average 
+      timer_buffer[n] = timer; //store value
+      tap_rate_sum += timer_buffer[n]; //sum for average
       n++; //increment average count
-      //fixed point version 
-      //tap_phase_inc = ((tap_rate_sum/n)<<10)>>9; //calculate period and increase resolution (12-lshift: 4096)
-      //alternate 
-      fhz = 31250.0/float(timer);
-      //fhz = 31250.0/float(tap_rate_sum/n);
+      tap_rate_ave = tap_rate_sum/n;
+      //FIXED POINT VERSION
+      //tap_phase_inc = (tap_rate_ave<<10)>>9; //calculate period and increase resolution (10-lshift: 1024)
+      //FLOATING POINT VERSION
+      fhz = 31250.0/float(tap_rate_ave);
       tap_phase_inc = fhz*34395;
       if(n > 1) {
         tap_phase = 1; //use tap tempo value for rate / phase increments
