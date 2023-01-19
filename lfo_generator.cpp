@@ -280,11 +280,13 @@ ISR(TIMER1_CAPT_vect){
       tap_rate_sum += timer_buffer[n]; //sum for average
       n++; //increment average count
       tap_rate_ave = tap_rate_sum/n;
-      //FIXED POINT VERSION
-      //tap_phase_inc = (tap_rate_ave<<10)>>9; //calculate period and increase resolution (10-lshift: 1024)
-      //FLOATING POINT VERSION
-      fhz = 31250.0/float(tap_rate_ave);
-      tap_phase_inc = fhz*34395;
+      //FIXED POINT VERSION 
+      tap_rate_ave = tap_rate_sum/n;
+      tap_phase_inc = ((0x07A12000/tap_rate_ave)*34359)>>12;
+      //Floating-point version
+      //tap_rate_ave = (uint32_t)((float)tap_rate_sum/n);
+      //fhz = (float)(float(31250.0)/float(tap_rate_ave));
+      //tap_phase_inc = (uint32_t)(fhz*float(34359.73837));
       if(n > 1) {
         tap_phase = 1; //use tap tempo value for rate / phase increments
       }
